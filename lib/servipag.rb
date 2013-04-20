@@ -15,20 +15,20 @@ module Servipag
   include CryptDecrypt
   module ApiRequests
   	class TransactionBegginer < ServipagConfiguration::Configuration
-      attr_accessor :eps, 
-                    :payment_channel_id, 
-                    :id_tx_client, 
-                    :payment_date, 
-                    :total_amount, 
-                    :bill_counter, 
-                    :id_sub_trx, 
-                    :identifier_code, 
-                    :bill, 
-                    :amount, 
+      attr_accessor :eps,
+                    :payment_channel_id,
+                    :id_tx_client,
+                    :payment_date,
+                    :total_amount,
+                    :bill_counter,
+                    :id_sub_trx,
+                    :identifier_code,
+                    :bill,
+                    :amount,
                     :expiration_date
-      
+
   		def initialize(attrs={})
-        super unless defined? @@settings
+        super(attrs) unless defined? @@settings
         @payment_channel_id =  @@settings['payment_channel_id']
         @id_tx_client       =  GeneratorHelper::TokenGenerator.generate_token
         @payment_date       =  GeneratorHelper::DateGenerator.generate_payment_date
@@ -38,16 +38,16 @@ module Servipag
         @identifier_code    =  GeneratorHelper::TokenGenerator.generate_numeric_token
         @bill               =  GeneratorHelper::TokenGenerator.generate_numeric_random_token
         @amount             =  @total_amount
-        @expiration_date    =  GeneratorHelper::DateGenerator.generate_payment_date  
+        @expiration_date    =  GeneratorHelper::DateGenerator.generate_payment_date
         @eps                =  CryptDecrypt::Encrypt.encrypt_using_private_key(@@settings['private_key_path'], concatenated_strings).gsub("\n",'')
       end
 
       def create_request
-        RestClient.post(@@settings['servipag_url'], 
-                        GeneratorHelper::XML::Xml1.generate_xml(attrs_hash), 
+        RestClient.post(@@settings['servipag_url'],
+                        GeneratorHelper::XML::Xml1.generate_xml(attrs_hash),
                         content_type: :xml)
       end
-      
+
       def servipag_url
         settings['servipag_url']
       end
@@ -85,7 +85,7 @@ module Servipag
 
   	class PurchaseConfirmation < ServipagConfiguration::Configuration
       attr_accessor :return_code, :message
-      
+
       def initialize attrs={}
         super unless defined? @@settings
         @return_code = attrs[:return_code]
@@ -106,14 +106,14 @@ module Servipag
                     :payment_method_id,  :accountable_date,
                     :identifier_code,    :bill,
                     :amount
-      
+
       def initialize xml
         super unless defined? @@settings
         attrs = Parser.parse_xml2 xml
         attrs.each{|k,v| send("#{k}=", v)}
       end
 
-      def is_xml2_valid?      
+      def is_xml2_valid?
         Validator::Xml2.validate_signature self, settings['public_key_path']
       end
 
@@ -124,7 +124,7 @@ module Servipag
       def show_response_when_negative_status message
         ApiRequest::PurchaseConfirmation.new return_code: 0, message: message
       end
-  		
+
   	end
 
   	class CompleteTransaction < ServipagConfiguration::Configuration
@@ -136,7 +136,7 @@ module Servipag
         attrs = Parser.parse_xml4 xml
         attrs.each{|k,v| send("#{k}=", v) }
       end
-  		
+
       def is_xml4_valid?
         Validator::Xml4.validate_signature self, settings['private_key_path']
       end
